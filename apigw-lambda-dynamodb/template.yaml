@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless patterns - Amazon API Gateway to AWS Lambda to Amazon DynamoDB
+Resources:
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Description: 'Lambda function inserts data into DynamoDB table'
+    Properties:
+      FunctionName: WeatherFunction
+      Handler: index.lambda_handler
+      Runtime: python3.7
+      CodeUri: src/
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName: !Ref DynamoDBTable
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: WeatherData
+      Events:
+        ApiPostEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
+        ApiDeleteEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: DELETE
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: WeatherData
+      DeletionProtectionEnabled: True
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      AttributeDefinitions:
+        -
+          AttributeName: "id"
+          AttributeType: "S"
+        -
+          AttributeName: "Weather"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: id
+          KeyType: "HASH"
+        -
+          AttributeName: "Weather"
+          KeyType: "RANGE"
+Outputs:
+  EndpointUrl:
+    Description: 'HTTP REST endpoint URL'
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'
